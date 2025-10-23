@@ -12,6 +12,7 @@ import cookieParser from "cookie-parser";
 
 import mentorRoutes from "./routes/mentorRoutes.js";
 import adminRouter from "./routes/adminRoutes.js";
+import studentRouter from "./routes/studentRoutes.js";
 
 dotenv.config();
 
@@ -31,8 +32,9 @@ app.use(
   express.static(path.join(__dirname, "..", process.env.UPLOAD_DIR || "uploads"))
 );
 
-app.use("/user", mentorRoutes);
+app.use("/user/mentor", mentorRoutes);
 app.use("/admin", adminRouter);
+app.use("/user/student", studentRouter);
 
 app.use((err, req, res, next) => {
   console.error(err);

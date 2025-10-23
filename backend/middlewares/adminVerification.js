@@ -21,6 +21,9 @@ export const adminVerification = (req, res, next) => {
     }
 
     const decoded = verifyToken(token);
+    if (decoded.role !== "admin") {
+      return res.status(403).json({ message: "Access denied: Admins only" });
+    }
     // attach decoded payload to req.user for downstream handlers
     req.user = decoded;
     next();

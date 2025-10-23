@@ -19,3 +19,39 @@ export const adminSignupSchema = Joi.object({
   name: Joi.string().min(2).max(100).required(),
   password: Joi.string().min(6).required(),
 });
+// const studentSchema = new mongoose.Schema({
+//   fullName: { type: String, required: true },
+//   email: { type: String, required: true, unique: true },
+//   password: { type: String, required: true },
+//   educationLevel: { type: String, required: true },
+//   careerGoals: { type: String, required: true },
+//   interests: [{ type: String, required: true }],
+//   timezone: { type: String, required: true },
+//   languagePreference: { type: String, required: true },
+//   budgetRange: { type: String },
+//   profilePicture: {
+//     url: { type: String, default: null },
+//     filename: { type: String, default: null },
+//   },
+//   role: { type: String, default: "student" },
+//   status: { type: String, default: "active" },
+//   verified: { type: Boolean, default: false },
+// }, { timestamps: true });
+
+export const studentSignupSchema = Joi.object({
+  name: Joi.string().min(2).max(100).required(),
+  email: Joi.string().email().required(),
+  password: Joi.string().min(6).required(),
+  
+  educationLevel: Joi.string().min(2).max(100).required(),
+  careerGoals: Joi.string().min(2).max(500).required(),
+  interests: Joi.array().items(Joi.string().min(2).max(100)).required(),
+  
+  languagePreference: Joi.string().min(2).max(100).required(),
+ 
+  
+});
+export const studentLoginSchema = Joi.object({
+  email: Joi.string().email().required(),
+  password: Joi.string().min(6).required(),
+});

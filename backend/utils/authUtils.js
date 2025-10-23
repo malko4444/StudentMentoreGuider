@@ -28,11 +28,12 @@ export const verifyToken = (token) => {
     throw new Error("Invalid token");
    }
    console.log("decodedToken", decoded);
-   if(decoded.role === "admin"){
+  //  if(decoded.role === "admin"){
+  //   return decoded;
+  //  }else{
+  //   throw new Error("Invalid token");
+  //  }
     return decoded;
-   }else{
-    throw new Error("Invalid token");
-   }
    
     } catch (error) {
     throw new Error("Invalid token: " + error.message);
