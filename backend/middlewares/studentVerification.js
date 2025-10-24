@@ -25,9 +25,9 @@ export const studentVerification = (req, res, next) => {
         }
 
         const decoded = verifyToken(token);
-        if (decoded.role !== "student") {
-            return res.status(403).json({ message: "Access denied: Students only" });
-        }
+        // if (decoded.role !== "student") {
+        //     return res.status(403).json({ message: "Access denied: Students only" });
+        // }
 
         req.user = decoded;
         next();
