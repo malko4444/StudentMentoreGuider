@@ -21,27 +21,30 @@ export const loginMentor = async (req, res, next) => {
   try {
     const { email, password } = req.body;
     console.log("email,paswweord", email, password);
-    
+
     // check the mentor exist in mentor Collection  
-    if( !email || !password ){
-        return res.status(400).json({ message: "Email and password are required" });
+    if (!email || !password) {
+      return res.status(400).json({ message: "Email and password are required" });
     }
     // also get the password and compare later
     const mentor = await User.findOne({ email: email, role: "mentor" });
-    console.log( "mentor in db ", mentor);
-    
+    console.log("mentor in db ", mentor);
+
     if (!mentor) {
-        return res.status(401).json({ message: "Invalid email" });
+      return res.status(401).json({ message: "Invalid email" });
     }
-    if(await comparePassword(password, mentor.password) === false){
-        return res.status(401).json({ message: "Invalid password" });
+    if (await comparePassword(password, mentor.password) === false) {
+      return res.status(401).json({ message: "Invalid password" });
     }
     const token = generateToken(mentor._id, "mentor");
     // auto set the response to cookies
     res.cookie("token", token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      httpOnly: true,
+      secure: false, // Set to false in development (localhost)
+      sameSite: 'lax', // Change from 'strict' to 'lax'
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      path: '/'
+
     });
     return res.status(200).json({ message: "Mentor login successful" });
   } catch (err) {
@@ -55,8 +58,9 @@ export const getMentorProfile = async (req, res, next) => {
     if (!mentor) {
       return res.status(404).json({ message: "Mentor not found" });
     }
-    res.status(200).json({ mentor , 
-    message: "Mentor profile fetched successfully"
+    res.status(200).json({
+      mentor,
+      message: "Mentor profile fetched successfully"
     });
   } catch (err) {
     next(err);

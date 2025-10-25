@@ -35,9 +35,12 @@ export const loginStudent = async(req, res) => {
     const token = generateToken(studentInDb._id, "student");
     // auto set the response to cookies
     res.cookie("token", token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      httpOnly: true,
+      secure: false, // Set to false in development (localhost)
+      sameSite: 'lax', // Change from 'strict' to 'lax'
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      path: '/'
+
     });
     return res.status(200).json({ message: "Student login successful" });
 };

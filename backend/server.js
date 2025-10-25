@@ -2,6 +2,7 @@ import express from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import helmet from "helmet";
+import cors from "cors";
 import rateLimit from "express-rate-limit";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -25,6 +26,16 @@ const PORT = process.env.PORT || 4000;
 
 // Middlewares
 app.use(express.json());
+// At the top of your Express app (before routes)
+// const cors = require('cors');
+
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:3006', // Your Next.js URL
+  credentials: true, // CRITICAL: Allows cookies to be sent
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 app.use(helmet());
 app.use(rateLimit({ windowMs: 60 * 1000, max: 100 }));
 app.use(cookieParser());
@@ -40,7 +51,7 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: "*", // frontend URL in production
+    origin: "http://localhost:3006", // frontend URL in production
     methods: ["GET", "POST"],
   },
 });
