@@ -1,42 +1,24 @@
 "use client";
 import React, { useState } from "react";
-import axios from "axios";
+import { useAuthStore } from "../../store/useAuthStore";
+import { useRouter } from "next/navigation";  // adjust path if needed
 
 function Page() {
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
+  const [formData, setFormData] = useState({ email: "", password: "" });
+   const router = useRouter()
 
-  const [responseData, setResponseData] = useState(null);
-  const [loading, setLoading] = useState(false);
-
-  const baseURL = process.env.NEXT_PUBLIC_API_URL;
+  const { login, loading, responseData, error } = useAuthStore();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleLogin = async (e) => {
+  const handleLogin = (e) => {
+   
     e.preventDefault();
-    setLoading(true);
-    setResponseData(null);
-
-    try {
-      const response = await axios.post(`${baseURL}/user/mentor/login`, formData, {
-        headers: { "Content-Type": "application/json" },
-        withCredentials: true, // to send cookies if backend uses JWT cookies
-      });
-
-      console.log("✅ Login Response:", response.data);
-      setResponseData(response.data);
-    } catch (error) {
-      console.error("❌ Error:", error.response ? error.response.data : error.message);
-      setResponseData(error.response?.data || { message: "Login failed" });
-    } finally {
-      setLoading(false);
-    }
+    login(formData,router);
+   
   };
 
   return (
@@ -83,11 +65,11 @@ function Page() {
         </button>
       </form>
 
-      {responseData && (
+      {(responseData || error) && (
         <div className="mt-6 w-full max-w-md bg-black/50 border border-blue-400/40 p-4 rounded-lg text-sm">
           <h2 className="font-semibold text-blue-300 mb-2">Response:</h2>
           <pre className="whitespace-pre-wrap break-words">
-            {JSON.stringify(responseData, null, 2)}
+            {JSON.stringify(responseData || error, null, 2)}
           </pre>
         </div>
       )}

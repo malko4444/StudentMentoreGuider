@@ -1,7 +1,7 @@
 import express from "express";
 import { validateRequest } from "../middlewares/validateRequest.js";
 import { createMentorSchema } from "../utils/validators.js";
-import { createMentor, deleteProfilePicture, getMentorProfile, loginMentor, uploadPicture } from "../controllers/mentorController.js";
+import { createMentor, deleteProfilePicture, getChatsAsMentor, getMentorProfile, getPreviousChat, getPreviousChatList, loginMentor, uploadPicture } from "../controllers/mentorController.js";
 import { mentorVerification } from "../middlewares/mentorVerification.js";
 import upload from "../middlewares/uploadImage.js";
 
@@ -13,5 +13,7 @@ router.get("/profile", mentorVerification, getMentorProfile);
 router.post("/uploadProfile", mentorVerification, upload.single("image"),
     uploadPicture)
 router.delete("/deleteProfilePicture", mentorVerification, deleteProfilePicture)
+router.get("/previouseChat/:studentId", mentorVerification, getChatsAsMentor)
+router.get("/previouseChat/list", mentorVerification, getPreviousChatList);
 
 export default router;

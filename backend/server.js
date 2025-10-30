@@ -47,14 +47,18 @@ app.use("/user/student", studentRouter);
 // app.use("/chat", chatRoutes);
 
 // -------------------- SOCKET.IO SETUP --------------------
+// -------------------- SOCKET.IO SETUP --------------------
 const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:3006", // frontend URL in production
+    origin: "http://localhost:3006", // your frontend URL
+    credentials: true,                // ✅ required for cookies
     methods: ["GET", "POST"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   },
 });
+
 
 const onlineUsers = new Map();
 
@@ -88,40 +92,59 @@ io.on("connection", (socket) => {
   });
 
   // send message event
-  socket.on("send_message", async ({ senderId, receiverId, text }) => {
-    try {
-      if (!senderId || !text) {
-        return socket.emit("error_message", "Missing required fields");
-      }
-
-      console.log("Sending message: ", senderId, receiverId, text)
-
-      // const message = await Message.create({
-      //   receiverId,
-      //   senderId,
-      //   text,
-      // });
-
-      // const conversation = await Conversation.findById(conversationId);
-      // if (!conversation) {
-      //   return socket.emit("error_message", "Conversation not found");
-      // }
-
-      // const receiverId = conversation.participants.find(
-      //   (id) => id.toString() !== senderId
-      // );
-
-      const receiverSocketId = onlineUsers.get(receiverId.toString());
-      if (receiverSocketId) {
-        io.to(receiverSocketId).emit("receive_message", message);
-      }
-
-      socket.emit("message_sent", message);
-    } catch (error) {
-      console.error("❌ Error sending message:", error.message);
-      socket.emit("error_message", "Failed to send message");
+socket.on("send_message", async ({ senderId, receiverId, text, senderRole }) => {
+  try {
+    // Validate all required fields
+    if (!senderId || !receiverId || !text || !senderRole) {
+      return socket.emit("error_message", "Missing required fields");
     }
-  });
+
+    console.log("💬 Sending message:", senderId, "→", receiverId, ":", text);
+
+    // 1️⃣ Find or create conversation
+    let conversation = await Conversation.findOne({
+      participants: { $all: [senderId, receiverId] },
+    });
+
+    if (!conversation) {
+      conversation = await Conversation.create({
+        participants: [senderId, receiverId],
+      });
+    }
+
+    // 2️⃣ Determine dynamic models
+    const senderModel = senderRole === "mentor" ? "User" : "Student";
+    const receiverModel = senderRole === "mentor" ? "Student" : "User";
+
+    // 3️⃣ Create and save the message
+    const message = await Message.create({
+      conversationId: conversation._id,
+      senderId,
+      senderModel,
+      receiverId,
+      receiverModel,
+      text,
+    });
+
+    // 4️⃣ Update conversation
+    conversation.lastMessage = text;
+    conversation.updatedAt = new Date();
+    await conversation.save();
+
+    // 5️⃣ Emit to receiver if online
+    const receiverSocketId = onlineUsers.get(receiverId.toString());
+    if (receiverSocketId) io.to(receiverSocketId).emit("receive_message", message);
+
+    // 6️⃣ Emit back to sender for acknowledgment
+    socket.emit("message_sent", message);
+
+  } catch (error) {
+    console.error("❌ Error sending message:", error.message);
+    socket.emit("error_message", "Failed to send message");
+  }
+});
+
+
 
   // handle disconnect
   socket.on("disconnect", () => {

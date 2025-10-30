@@ -3,6 +3,10 @@ import User from "../models/User.js";
 import { createMentor as createMentorService } from "../services/mentorService.js";
 import { comparePassword, generateToken } from "../utils/authUtils.js";
 import cloudinary from "../config/cloudinaryConfig.js";
+// import Message from "../models/messageModel.js"
+import Conversation from "../models/conversationModel.js";
+import Message from "../models/messageModel.js";
+// import User from "../models/User.js";
 
 export const createMentor = async (req, res, next) => {
   try {
@@ -46,7 +50,12 @@ export const loginMentor = async (req, res, next) => {
       path: '/'
 
     });
-    return res.status(200).json({ message: "Mentor login successful" });
+    return res.status(200).json({
+      message: "Mentor login successful",
+      role: "mentor",
+      mentor,
+      accessToken: token
+    });
   } catch (err) {
     next(err);
   }
@@ -136,3 +145,112 @@ export const deleteProfilePicture = async (req, res, next) => {
   }
 };
 
+
+export const getChatsAsMentor = async (req, res, next) => {
+  try {
+    const mentorId = req.user.id;
+
+    // ✅ Get all messages where this mentor is involved
+    const messages = await Message.find({
+      $or: [{ senderId: mentorId }, { receiverId: mentorId }],
+    }).populate("senderId receiverId", "name email role profilePicture");
+    console.log("the id mesages", messages);
+
+
+
+    // ✅ Extract unique student IDs safely
+    const studentMap = new Map();
+
+    messages.forEach((msg) => {
+      const sender = msg.senderId;
+      const receiver = msg.receiverId;
+      console.log("the senderId", msg);
+      // console.log("the receiverId", msg);
+      
+      
+
+      // 🧩 check both sides safely
+      if (sender ) {
+        studentMap.set(sender._id.toString(), sender);
+      }
+      if (receiver ) {
+        studentMap.set(receiver._id.toString(), receiver);
+      }
+    });
+    console.log("student messages ", studentMap);
+    
+
+    const uniqueStudents = Array.from(studentMap.values());
+
+    return res.status(200).json({
+      message: "Fetched students who have chatted with mentor",
+      students: uniqueStudents,
+    });
+  } catch (err) {
+    console.error("❌ Error in getChatsAsMentor:", err);
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+export const getPreviousChatList = async (req, res) => {
+  try {
+    const mentorId = req.user.id;
+    console.log("the mentorId is that msg student ",mentorId);
+    
+
+    // Find conversations where mentor is a participant
+    const conversations = await Conversation.find({ participants: mentorId }).lean();
+
+    if (!conversations || conversations.length === 0) {
+      return res.status(200).json({ students: [] });
+    }
+
+    // Extract unique student IDs
+    const studentIds = conversations
+      .flatMap(conv => conv.participants)
+      .filter(id => id.toString() !== mentorId.toString());
+
+    // Fetch student details
+    const students = await User.find({ _id: { $in: studentIds }, role: "student" })
+      .select("name email profilePicture");
+
+    res.status(200).json({ students });
+  } catch (error) {
+    console.error("❌ Error fetching previous chat list:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+// 🔹 Get chat messages between mentor and student
+export const getPreviousChat = async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    const mentorId = req.user.id;
+
+    let conversation = await Conversation.findOne({
+      participants: { $all: [mentorId, studentId] },
+    });
+
+    if (!conversation) {
+      conversation = await Conversation.create({
+        participants: [mentorId, studentId],
+      });
+    }
+
+    const messages = await Message.find({ conversationId: conversation._id })
+      .sort({ createdAt: 1 })
+      .lean();
+
+    const student = await User.findById(studentId).select("name profilePicture");
+
+    res.status(200).json({
+      student: {
+        name: student?.name || "Unknown Student",
+        profilePicture: student?.profilePicture || null,
+      },
+      messages,
+    });
+  } catch (error) {
+    console.error("❌ Error fetching chat:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};

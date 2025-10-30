@@ -1,5 +1,5 @@
 import express from "express";
-import { getMentors, getStudentProfile, loginStudent, signupStudent, SuggestFromAi } from "../controllers/studentController.js";
+import { getChats, getMentors, getStudentProfile, loginStudent, signupStudent, SuggestFromAi } from "../controllers/studentController.js";
 import { validateRequest } from "../middlewares/validateRequest.js";
 import { studentLoginSchema, studentSignupSchema } from "../utils/validators.js";
 import { studentVerification } from "../middlewares/studentVerification.js";
@@ -13,6 +13,7 @@ studentRouter.post("/login",validateRequest(studentLoginSchema),  loginStudent);
 studentRouter.get("/profile", studentVerification, getStudentProfile );
 studentRouter.get('/all-mentor',studentVerification, getMentors )
 studentRouter.post("/AISuggestion",studentVerification, SuggestFromAi )
+studentRouter.get("/previouseChat/:mentorId",studentVerification, getChats  )
 
 
 

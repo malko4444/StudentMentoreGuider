@@ -7,12 +7,16 @@ import { CheckCircle, XCircle, RefreshCw } from "lucide-react";
 export default function MentorManagement() {
   const [mentors, setMentors] = useState([]);
   const [loading, setLoading] = useState(true);
+  console.log("before");
+  
   const baseURL = process.env.NEXT_PUBLIC_API_URL;
-
+console.log("after ", baseURL)
   // Fetch mentors
   useEffect(() => {
     const fetchMentors = async () => {
       try {
+        console.log("the token", baseURL);
+        
         const res = await axios.get(`${baseURL}/admin/mentors`, {
           withCredentials: true,
         });

@@ -1,3 +1,4 @@
+// import conversationModel from "../models/conversationModel.js";
 import Student from "../models/Student.js";
 import User from "../models/User.js";
 import { comparePassword, generateToken, hashPassword } from "../utils/authUtils.js";
@@ -42,7 +43,10 @@ export const loginStudent = async(req, res) => {
       path: '/'
 
     });
-    return res.status(200).json({ message: "Student login successful" });
+    return res.status(200).json({ message: "Student login successful",
+        accessToken: token, 
+        role:"student"
+     });
 };
 export const getStudentProfile = async (req, res) => {
     try {
@@ -80,3 +84,61 @@ export const SuggestFromAi = async(req, res)=>{
 
 
 }
+
+import Conversation from "../models/conversationModel.js";
+import Message from "../models/messageModel.js";
+// import User from "../models/userModel.js"; // mentors
+
+export const getChats = async (req, res) => {
+  try {
+    const { mentorId } = req.params;
+    const studentId = req.user.id; // ✅ from token
+
+    if (!mentorId || !studentId) {
+      return res.status(400).json({ message: "Mentor ID or Student ID missing" });
+    }
+
+    // ✅ Check if conversation exists between student & mentor
+    let conversation = await Conversation.findOne({
+      participants: { $all: [mentorId, studentId] },
+    });
+    console.log("the converstaion of the user ", conversation);
+    
+
+    // ✅ Create if not exist
+    if (!conversation) {
+      console.log("the ew concverstation");
+      
+      conversation = await Conversation.create({
+        participants: [studentId, mentorId],
+      });
+    }
+
+    // ✅ Fetch messages
+    const messages = await Message.find({ conversationId: conversation._id })
+console.log("rge messages between them", messages);
+
+    // ✅ Fetch mentor info
+    const mentor = await User.findById(mentorId).select("name profilePicture");
+
+    // ✅ Format response
+    const formattedMessages = messages.map((msg) => ({
+      _id: msg._id,
+      text: msg.text,
+      senderId: msg.senderId,
+      senderType: msg.senderId.toString() === studentId.toString() ? "student" : "mentor",
+      createdAt: msg.createdAt,
+    }));
+
+    return res.status(200).json({
+      mentor: {
+        name: mentor?.name || "Unknown Mentor",
+        profilePicture: mentor?.profilePicture?.url || null,
+      },
+      messages: formattedMessages,
+    });
+  } catch (error) {
+    console.error("❌ Error fetching chat:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
